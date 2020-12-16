@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "netty.port",
+      "type": "java.lang.String",
+      "description": "Description for netty.port."
+    },
+    {
+      "name": "netty.host",
+      "type": "java.lang.String",
+      "description": "Description for netty.host."
+    }
+  ]
+}
