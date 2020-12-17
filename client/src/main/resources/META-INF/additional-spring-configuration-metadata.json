@@ -9,6 +9,11 @@
       "name": "netty.host",
       "type": "java.lang.String",
       "description": "Description for netty.host."
+    },
+    {
+      "name": "netty.auth",
+      "type": "java.lang.String",
+      "description": "Description for netty.auth."
     }
   ]
 }

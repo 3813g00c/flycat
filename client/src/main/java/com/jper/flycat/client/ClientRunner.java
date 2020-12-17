@@ -1,5 +1,6 @@
 package com.jper.flycat.client;
 
+import com.jper.flycat.client.handler.SocksRequestHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -7,9 +8,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.socks.SocksInitRequestDecoder;
 import io.netty.handler.codec.socks.SocksMessageEncoder;
-import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -37,15 +38,21 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
     @Value("${netty.host}")
     private String host;
 
+    @Autowired
+    private SocksRequestHandler socksRequestHandler;
+
     private ApplicationContext applicationContext;
 
     private Channel channel;
 
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-        log.info("启动Netty");
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+    public void run(ApplicationArguments args) {
+        log.info("启动客户端服务");
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap serverBoot = new ServerBootstrap();
             serverBoot.group(bossGroup, workerGroup)
@@ -56,6 +63,7 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
                             ChannelPipeline p = socketChannel.pipeline();
                             p.addLast(new SocksInitRequestDecoder());
                             p.addLast(new SocksMessageEncoder());
+                            p.addLast(socksRequestHandler);
                         }
                     });
             ChannelFuture future = serverBoot.bind(new InetSocketAddress(this.host, this.port)).sync();
@@ -68,9 +76,8 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
                     channelFuture.cause().printStackTrace();
                 }
             });
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
+        } catch (InterruptedException i) {
+            log.error("ClientServer 启动出现异常，端口：{}，cause：{}", this.port, i.getMessage());
         }
     }
 
@@ -82,8 +89,13 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
     @Override
     public void onApplicationEvent(ContextClosedEvent contextClosedEvent) {
         if (this.channel != null) {
-            this.channel.close();
+            try {
+                this.channel.close();
+            } finally {
+                bossGroup.shutdownGracefully();
+                workerGroup.shutdownGracefully();
+            }
         }
-        log.info("服务停止！");
+        log.info("客户端服务停止");
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author ywxiang
  * @date 2020/12/16 下午8:19
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.jper.flycat"})
 public class ClientApplication {
     public static void main(String[] args) {
         SpringApplication.run(ClientApplication.class, args);
