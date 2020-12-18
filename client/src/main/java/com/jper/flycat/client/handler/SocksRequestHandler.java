@@ -23,7 +23,6 @@ public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SocksRequest request) {
-        System.out.println(auth);
         switch (request.requestType()) {
             case INIT: {
                 // 如果是初始化报文
