@@ -3,6 +3,7 @@ package com.jper.flycat.client.handler;
 import com.jper.flycat.core.util.SpringUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.socks.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,8 @@ public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SocksRequest request) {
+        ChannelId channelId = ctx.channel().id();
+
         switch (request.requestType()) {
             case INIT: {
                 // 如果是初始化报文

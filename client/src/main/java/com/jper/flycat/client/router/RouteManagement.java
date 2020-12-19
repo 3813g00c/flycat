@@ -2,6 +2,7 @@ package com.jper.flycat.client.router;
 
 import com.jper.flycat.client.proxy.SocksProxyRequest;
 import lombok.Getter;
+import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/12/18 下午9:11
  */
 @Getter
-public class Route {
+@Service
+public class RouteManagement {
     private final Map<String, SocksProxyRequest> routeMap = new ConcurrentHashMap<>();
 
     /**
@@ -26,11 +28,11 @@ public class Route {
     /**
      * 获取路由信息
      *
-     * @param request 请求
+     * @param id 请求
      * @return SocksProxyRequest
      */
-    public SocksProxyRequest selRouter(SocksProxyRequest request) {
-        return routeMap.get(getKey(request));
+    public SocksProxyRequest selRouter(String id) {
+        return routeMap.get(id);
     }
 
     private String getKey(SocksProxyRequest request) {

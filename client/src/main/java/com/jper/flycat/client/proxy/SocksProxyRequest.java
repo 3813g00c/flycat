@@ -1,5 +1,6 @@
 package com.jper.flycat.client.proxy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,11 @@ public class SocksProxyRequest {
      * 服务器Channel通道
      */
     private Channel serverChannel;
+
+    /**
+     * 其次请求的消息体
+     */
+    private ByteBuf msg;
 
 //    /**
 //     * 客户端Channel状态

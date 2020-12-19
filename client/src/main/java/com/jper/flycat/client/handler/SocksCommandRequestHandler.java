@@ -26,6 +26,7 @@ public class SocksCommandRequestHandler extends SimpleChannelInboundHandler<Sock
         ctx.writeAndFlush(new SocksCmdResponse(SocksCmdStatus.SUCCESS, SocksAddressType.IPv4));
         ctx.pipeline().remove(this);
         SocksProxyRequest request = new SocksProxyRequest(host, port, ctx.channel(), null);
+        ctx.pipeline().addLast(new TCPDirectConnectHandler(request));
         System.out.println(host + ":" + port);
     }
 }
