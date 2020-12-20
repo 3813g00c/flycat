@@ -5,6 +5,8 @@ import io.netty.channel.Channel;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.concurrent.LinkedBlockingQueue;
+
 
 /**
  * @author ywxiang
@@ -39,21 +41,26 @@ public class SocksProxyRequest {
      */
     private ByteBuf msg;
 
-//    /**
-//     * 客户端Channel状态
-//     */
-//    private int clientChannelStatus;
-//
-//    /**
-//     * 服务器Channel状态
-//     */
-//    private int serverChannelStatus;
+    /**
+     * 当前服务器连接状态
+     * 0：未连接
+     * 1：已连接且存活
+     * 2：正在连接
+     * -1：已连接但连接未存活
+     * -2：连接失败
+     */
+    private int serverChannelStatus = 0;
 
-    public SocksProxyRequest(String host, int port, Channel clientChannel, Channel serverChannel) {
+    /**
+     * 消息队列
+     */
+    private LinkedBlockingQueue<ByteBuf> msgQueue;
+
+    public SocksProxyRequest(String host, int port, Channel clientChannel) {
         this.host = host;
         this.port = port;
         this.clientChannel = clientChannel;
-        this.serverChannel = serverChannel;
+        this.msgQueue = new LinkedBlockingQueue<>();
     }
 
     @Override
