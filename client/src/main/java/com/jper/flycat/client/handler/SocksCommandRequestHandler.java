@@ -1,6 +1,5 @@
 package com.jper.flycat.client.handler;
 
-import com.jper.flycat.client.proxy.SocksProxyRequest;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.socks.SocksAddressType;
@@ -24,8 +23,7 @@ public class SocksCommandRequestHandler extends SimpleChannelInboundHandler<Sock
         String host = msg.host();
         int port = msg.port();
         ctx.writeAndFlush(new SocksCmdResponse(SocksCmdStatus.SUCCESS, SocksAddressType.IPv4));
-        ctx.pipeline().remove(this);
-        SocksProxyRequest request = new SocksProxyRequest(host, port, ctx.channel(), null);
-        System.out.println(host + ":" + port);
+        String clientInfo = host + port;
+        ctx.pipeline().addLast(new TCPProxyRequestHandler(host, port)).remove(this);
     }
 }
