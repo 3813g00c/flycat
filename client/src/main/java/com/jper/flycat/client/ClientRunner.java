@@ -23,7 +23,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +44,9 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
 
     @Value("${netty.host}")
     private String host;
+
+    @Resource(name = "threadPoolInstance")
+    private ExecutorService executorService;
 
     @Autowired
     private SocksRequestHandler socksRequestHandler;
@@ -88,9 +93,10 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
             log.error("ClientServer 启动出现异常，端口：{}，cause：{}", this.port, i.getMessage());
         }
 
-        MyThread mt1 = new MyThread();
-        Thread t1 = new Thread(mt1);
-        t1.start();
+//        MyThread mt1 = new MyThread();
+//        Thread t1 = new Thread(mt1);
+//        t1.start();
+        // executorService.execute(new MessageForward());
     }
 
     @Override
@@ -109,6 +115,55 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
             }
         }
         log.info("客户端服务停止");
+    }
+
+    private class MessageForward implements Runnable {
+        @Override
+        public void run() {
+            for (SocksProxyRequest request : routeManagement.getRouteMap().values()) {
+                System.out.println(routeManagement.getRouteMap().size());
+                executorService.execute(() -> {
+                    while (request.getServerChannelStatus() != -1) {
+                        Channel cc = request.getClientChannel();
+                        if (cc != null && !cc.isActive()) {
+                            routeManagement.getRouteMap().remove(request.getHost() + request.getPort());
+                            break;
+                        }
+
+                        Channel sc = request.getServerChannel();
+                        if (sc == null) {
+                            continue;
+                        }
+
+                        if (!sc.isActive()) {
+                            routeManagement.getRouteMap().remove(request.getHost() + request.getPort());
+                            break;
+                        }
+                        LinkedBlockingQueue<ByteBuf> queue = request.getMsgQueue();
+                        ByteBuf buf;
+                        try { //之所以采用循环是为了转发客户端请求时避免消息不完整
+                            int time = 0;
+                            while ((buf = queue.poll(1, TimeUnit.MILLISECONDS)) != null) {
+                                time++;
+                                if (time / 4 == 1) {  //每4次写入刷新一次
+                                    sc.writeAndFlush(buf);
+                                    time = 0;
+                                } else {
+                                    sc.write(buf);
+                                }
+                            }
+
+                            if (time > 0) {
+                                sc.flush();
+                            }
+
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                });
+            }
+        }
     }
 
     private class MyThread implements Runnable {
