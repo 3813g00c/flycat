@@ -41,7 +41,6 @@ public class TCPDirectConnectHandler extends SimpleChannelInboundHandler<ByteBuf
         if (cause instanceof IOException) {
             log.info("Direct TCP Connection force to close, from remote server {}:{}", request.getHost(), request.getPort());
         }
-
         request.getClientChannel().close();
     }
 

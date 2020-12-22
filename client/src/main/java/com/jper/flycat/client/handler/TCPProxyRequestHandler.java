@@ -12,6 +12,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ywxiang
@@ -42,14 +46,114 @@ public class TCPProxyRequestHandler extends SimpleChannelInboundHandler<ByteBuf>
             request = new SocksProxyRequest(host, port, ctx.channel());
             request.getMsgQueue().put(msg);
             routeManagement.addRule(request);
+            ExecutorService executorService = (ExecutorService) SpringUtil.getBean("threadPoolInstance");
+            executorService.execute(new My(request));
+            executorService.execute(() -> {
+                while (request.getServerChannelStatus() != -1) {
+                    Channel cc = request.getClientChannel();
+                    if (cc != null && !cc.isActive()) {
+                        routeManagement.getRouteMap().remove(request.getHost() + request.getPort());
+                        break;
+                    }
+
+                    Channel sc = request.getServerChannel();
+                    if (sc == null) {
+                        continue;
+                    }
+
+                    if (!sc.isActive()) {
+                        routeManagement.getRouteMap().remove(request.getHost() + request.getPort());
+                        break;
+                    }
+                    LinkedBlockingQueue<ByteBuf> queue = request.getMsgQueue();
+                    ByteBuf buf;
+                    try { //之所以采用循环是为了转发客户端请求时避免消息不完整
+                        int time = 0;
+                        while ((buf = queue.poll(1, TimeUnit.MILLISECONDS)) != null) {
+                            time++;
+                            if (time / 4 == 1) {  //每4次写入刷新一次
+                                sc.writeAndFlush(buf);
+                                time = 0;
+                            } else {
+                                sc.write(buf);
+                            }
+                        }
+
+                        if (time > 0) {
+                            sc.flush();
+                        }
+
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            });
+            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
+            int queueSize = tpe.getQueue().size();
+            System.out.println("当前排队线程数：" + queueSize);
+
+            int activeCount = tpe.getActiveCount();
+            System.out.println("当前活动线程数：" + activeCount);
+
+            long completedTaskCount = tpe.getCompletedTaskCount();
+            System.out.println("执行完成线程数：" + completedTaskCount);
+
+            long taskCount = tpe.getTaskCount();
+            System.out.println("总线程数：" + taskCount);
+
         }
-        int status = request.getServerChannelStatus();
-        if (status == 0) {
-            doConnect(request);
-        } else if (status == 2) {
-            log.info("connecting！");
+    }
+
+    private class My implements Runnable {
+
+        private final SocksProxyRequest request;
+
+        public My(SocksProxyRequest request) {
+            this.request = request;
         }
 
+        @Override
+        public void run() {
+            doConnect(request);
+        }
+    }
+
+    private class TestConn implements Runnable {
+        private SocksProxyRequest request;
+
+        public TestConn(SocksProxyRequest request) {
+            this.request = request;
+        }
+
+        @Override
+        public void run() {
+            Channel sc = request.getServerChannel();
+            while (sc != null && sc.isActive()) {
+                LinkedBlockingQueue<ByteBuf> queue = request.getMsgQueue();
+                ByteBuf buf;
+                try { //之所以采用循环是为了转发客户端请求时避免消息不完整
+                    int time = 0;
+                    while ((buf = queue.poll(1, TimeUnit.MILLISECONDS)) != null) {
+                        time++;
+                        if (time / 4 == 1) {  //每4次写入刷新一次
+                            sc.writeAndFlush(buf);
+                            time = 0;
+                        } else {
+                            sc.write(buf);
+                        }
+                    }
+                    if (time > 0) {
+                        sc.flush();
+                    }
+
+                    while (!queue.isEmpty()) {
+                        sc.writeAndFlush(queue.poll(1, TimeUnit.MILLISECONDS));
+                    }
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }
     }
 
     private void doConnect(SocksProxyRequest request) {
@@ -67,7 +171,6 @@ public class TCPProxyRequestHandler extends SimpleChannelInboundHandler<ByteBuf>
                     }
                 });
         // 正在连接
-        request.setServerChannelStatus(2);
         b.connect(host, port).addListener((ChannelFuture f) -> {
             if (!f.isSuccess()) {
                 if (f.cause() instanceof ConnectTimeoutException) {
@@ -78,11 +181,10 @@ public class TCPProxyRequestHandler extends SimpleChannelInboundHandler<ByteBuf>
                     log.warn("connect establish failure, from " + request.getHost() + ":" + request.getPort(), f.cause());
                 }
                 request.getClientChannel().close();
-                request.setServerChannelStatus(-2);
+                request.setServerChannelStatus(-1);
                 f.channel().close();
             } else {
                 log.info("connect establish success, from {}:{}", request.getHost(), request.getPort());
-                request.setServerChannelStatus(1);
                 request.setServerChannel(f.channel());
             }
         });
