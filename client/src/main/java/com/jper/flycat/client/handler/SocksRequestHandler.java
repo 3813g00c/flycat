@@ -1,6 +1,5 @@
 package com.jper.flycat.client.handler;
 
-import com.jper.flycat.core.util.SpringUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
@@ -18,6 +17,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ChannelHandler.Sharable
 public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksRequest> {
+
+    private final SocksCommandRequestHandler socksCommandRequestHandler = new SocksCommandRequestHandler();
 
     @Value("${netty.auth}")
     private volatile boolean auth;
@@ -45,7 +46,7 @@ public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksReques
                 //如果是TCP代理
                 if (type == SocksCmdType.CONNECT) {
                     //添加SocksCommandRequestHandler，并移除当前Handler
-                    ctx.pipeline().addLast(SpringUtil.getBean(SocksCommandRequestHandler.class)).remove(this);
+                    ctx.pipeline().addLast(socksCommandRequestHandler).remove(this);
                     //传递给SocksCommandRequestHandler处理
                     ctx.fireChannelRead(req);
                 } else {
