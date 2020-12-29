@@ -1,4 +1,4 @@
-package com.jper.flycat.client.handler;
+package com.jper.flycat.core.util;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

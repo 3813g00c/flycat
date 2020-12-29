@@ -1,5 +1,6 @@
 package com.jper.flycat.client.handler;
 
+import com.jper.flycat.core.util.SocksServerUtils;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
