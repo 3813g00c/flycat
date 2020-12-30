@@ -1,0 +1,7 @@
+server:
+  port: 8090
+
+netty:
+  port: 9988
+  host: 127.0.0.1
+  auth: False
