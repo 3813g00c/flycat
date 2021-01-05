@@ -3,6 +3,7 @@ package com.jper.flycat.client.handler;
 import com.jper.flycat.core.factory.ContextSslFactory;
 import com.jper.flycat.core.util.SocksServerUtils;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -30,6 +31,7 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final SocksCmdRequest request) {
+        ByteBuf buf = null;
         Promise<Channel> promise = ctx.executor().newPromise();
         promise.addListener(
                 (GenericFutureListener<Future<Channel>>) future -> {

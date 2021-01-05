@@ -1,6 +1,7 @@
 package com.jper.flycat.server;
 
 import com.jper.flycat.core.factory.ContextSslFactory;
+import com.jper.flycat.server.handler.MySslHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -54,6 +55,7 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                         @Override
                         protected void initChannel(SocketChannel socketChannel) {
                             ChannelPipeline p = socketChannel.pipeline();
+                            p.addLast(new MySslHandler());
                             SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
                             engine.setUseClientMode(false);
                             engine.setNeedClientAuth(true);
