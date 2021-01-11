@@ -16,12 +16,12 @@ public class ProxyMessageEncoder extends MessageToByteEncoder<ProxyMessage> {
             if (msg == null) {
                 throw new Exception("The encode message is null");
             }
-
             out.writeBytes(msg.getPassword().getBytes());
-            out.writeBytes("\r\n".getBytes());
+            out.writeBytes(" ".getBytes());
             out.writeBytes(msg.getHost().getBytes());
-            out.writeBytes("\r\n".getBytes());
+            out.writeBytes(" ".getBytes());
             out.writeByte(msg.getPort());
+            out.writeBytes("\r\n".getBytes());
         } catch (Exception e) {
             e.printStackTrace();
         }

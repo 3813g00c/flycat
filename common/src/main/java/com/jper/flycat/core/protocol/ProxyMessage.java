@@ -8,6 +8,16 @@ import lombok.Data;
  */
 @Data
 public class ProxyMessage {
+
+    public ProxyMessage() {
+    }
+
+    public ProxyMessage(String password, String host, int port) {
+        this.password = password;
+        this.host = host;
+        this.port = port;
+    }
+
     private String password;
 
     private String host;

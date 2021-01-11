@@ -19,7 +19,13 @@ public class ProxyMessageDecoder extends LineBasedFrameDecoder {
         if (frame == null) {
             return null;
         }
-        int index = frame.indexOf(frame.readerIndex(), frame.writerIndex(), Byte.parseByte("\r\n"));
-        return null;
+        int index = frame.indexOf(frame.readerIndex(), frame.writerIndex(), (byte) ' ');
+
+        ByteBuf s = frame.slice(frame.readerIndex(), index);
+        byte[] d = new byte[s.readableBytes()];
+        s.getBytes(0, d);
+        String dd = new String(d);
+        // ProxyMessage d = new ProxyMessage(s, null, 0);
+        return frame.slice(frame.readerIndex(), index);
     }
 }
