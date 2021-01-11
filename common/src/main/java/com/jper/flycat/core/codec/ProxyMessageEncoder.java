@@ -20,7 +20,7 @@ public class ProxyMessageEncoder extends MessageToByteEncoder<ProxyMessage> {
             out.writeBytes(" ".getBytes());
             out.writeBytes(msg.getHost().getBytes());
             out.writeBytes(" ".getBytes());
-            out.writeByte(msg.getPort());
+            out.writeInt(msg.getPort());
             out.writeBytes("\r\n".getBytes());
         } catch (Exception e) {
             e.printStackTrace();
