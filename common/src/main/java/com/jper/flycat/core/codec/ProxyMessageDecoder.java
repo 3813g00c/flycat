@@ -1,5 +1,6 @@
 package com.jper.flycat.core.codec;
 
+import com.jper.flycat.core.protocol.ProxyMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LineBasedFrameDecoder;
@@ -29,19 +30,16 @@ public class ProxyMessageDecoder extends LineBasedFrameDecoder {
 //        byte[] port_ = new byte[port.readableBytes()];
         byte[] pwd_ = new byte[index];
         byte[] host_ = new byte[index2 - index - 1];
-        byte[] port_ = new byte[frame.writerIndex() - index2 - 1];
 //        password.getBytes(0, pwd_);
 //        host.getBytes(0, host_);
 //        port.getBytes(0, port_);
         frame.getBytes(0, pwd_);
         frame.getBytes(index + 1, host_);
         int p = frame.getInt(index2 + 1);
-
-        String dd = new String(pwd_);
-        String ff = new String(host_);
-        String cc = new String(port_);
-        int gg = Integer.parseInt(cc);
-        // ProxyMessage d = new ProxyMessage(s, null, 0);
-        return frame.slice(frame.readerIndex(), index);
+        ProxyMessage message = new ProxyMessage();
+        message.setPassword(new String(pwd_));
+        message.setHost(new String(host_));
+        message.setPort(p);
+        return message;
     }
 }

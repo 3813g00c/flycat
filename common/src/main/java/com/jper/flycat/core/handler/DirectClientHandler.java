@@ -1,4 +1,4 @@
-package com.jper.flycat.client.handler;
+package com.jper.flycat.core.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;

@@ -2,6 +2,7 @@ package com.jper.flycat.client.handler;
 
 import com.jper.flycat.core.codec.ProxyMessageEncoder;
 import com.jper.flycat.core.factory.ContextSslFactory;
+import com.jper.flycat.core.handler.RelayHandler;
 import com.jper.flycat.core.protocol.ProxyMessage;
 import com.jper.flycat.core.util.SocksServerUtils;
 import io.netty.bootstrap.Bootstrap;
@@ -46,19 +47,9 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
                                     } catch (NoSuchElementException e) {
                                         log.warn("socksCommandRequestHandler remove failed");
                                     }
-                                    ProxyMessage message = new ProxyMessage();
-                                    message.setPassword("SDAD");
-                                    message.setHost(request.host());
-                                    message.setPort(request.port());
-                                    // System.out.println();
-                                    ctx.pipeline().addLast(new ProxyMessageEncoder());
-                                    //ctx.pipeline().addLast(new ProxyMessageDecoder(1024));
-                                    // ctx.pipeline().fireChannelRead(message);
-                                    System.out.println("dada");
-                                    outboundChannel.pipeline().addLast(new ProxyMessageEncoder());
                                     // outboundChannel.pipeline().addLast(new RelayHandler(ctx.channel()));
-                                    outboundChannel.pipeline().addLast(new TestHandler(ctx.channel(), message));
-                                    ctx.pipeline().addLast(new TestHandler(outboundChannel, message));
+                                    System.out.println(outboundChannel);
+                                    ctx.pipeline().addLast(new RelayHandler(outboundChannel));
                                 });
                     } else {
                         ctx.channel().writeAndFlush(new SocksCmdResponse(SocksCmdStatus.FAILURE, request.addressType()));
@@ -96,13 +87,14 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
                         ChannelPipeline p = ch.pipeline();
                         SSLEngine engine = ContextSslFactory.getSslContext2().createSSLEngine();
                         engine.setUseClientMode(true);
+                        // p.addLast(new DirectClientHandler(promise));
                         // p.addLast(new ProxySuccessHandler(promise));
                         ProxyMessage message = new ProxyMessage();
                         message.setPassword("SDAD");
                         message.setHost(request.host());
                         message.setPort(request.port());
                         p.addLast(new ProxyMessageEncoder());
-                        p.addLast(new TestHandler1(message));
+                        p.addLast(new TestHandler1(message, inBoundChannel));
                         p.addFirst("ssl", new SslHandler(engine));
                     }
                 });
@@ -111,6 +103,7 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
             if (future.isSuccess()) {
                 // Connection established use handler provided results
                 log.info("connect establish success, from {}:{}", request.host(), request.port());
+                // ctx.channel().pipeline().addLast(new RelayHandler(future.channel()));
             } else {
                 log.info("connect establish failed, from {}:{}", request.host(), request.port());
                 // Close the connection if the connection attempt has failed.

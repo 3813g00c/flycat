@@ -58,7 +58,6 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                             ChannelPipeline p = socketChannel.pipeline();
                             p.addLast(new ProxyMessageDecoder(64 * 1024));
                             p.addLast(new MySslHandler());
-
                             SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
                             engine.setUseClientMode(false);
                             engine.setNeedClientAuth(true);
