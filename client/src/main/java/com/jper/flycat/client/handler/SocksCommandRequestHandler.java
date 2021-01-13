@@ -94,7 +94,7 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
                         message.setHost(request.host());
                         message.setPort(request.port());
                         p.addLast(new ProxyMessageEncoder());
-                        p.addLast(new TestHandler1(message, inBoundChannel));
+                        p.addLast(new TestHandler1(message, inBoundChannel, promise));
                         p.addFirst("ssl", new SslHandler(engine));
                     }
                 });
