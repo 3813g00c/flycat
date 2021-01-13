@@ -1,4 +1,4 @@
-package com.jper.flycat.client.handler;
+package com.jper.flycat.core.handler;
 
 import com.jper.flycat.core.util.SocksServerUtils;
 import io.netty.buffer.Unpooled;
@@ -27,7 +27,9 @@ public final class RelayHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        System.out.println("dada收到消息");
         if (relayChannel.isActive()) {
+            System.out.println(relayChannel);
             relayChannel.writeAndFlush(msg);
         } else {
             ReferenceCountUtil.release(msg);
