@@ -27,9 +27,7 @@ public final class RelayHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        System.out.println("dada收到消息");
         if (relayChannel.isActive()) {
-            System.out.println(relayChannel);
             relayChannel.writeAndFlush(msg);
         } else {
             ReferenceCountUtil.release(msg);

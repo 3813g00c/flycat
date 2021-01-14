@@ -1,6 +1,6 @@
 package com.jper.flycat.core.codec;
 
-import com.jper.flycat.core.protocol.ProxyMessage;
+import com.jper.flycat.core.protocol.ProxyMessageRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -9,9 +9,9 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author ywxiang
  * @date 2021/1/6 下午8:31
  */
-public class ProxyMessageEncoder extends MessageToByteEncoder<ProxyMessage> {
+public class ProxyMessageRequestEncoder extends MessageToByteEncoder<ProxyMessageRequest> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, ProxyMessage msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ProxyMessageRequest msg, ByteBuf out) throws Exception {
         try {
             if (msg == null) {
                 throw new Exception("The encode message is null");
