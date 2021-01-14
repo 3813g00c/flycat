@@ -7,12 +7,12 @@ import lombok.Data;
  * @date 2021/1/5 下午8:11
  */
 @Data
-public class ProxyMessage {
+public class ProxyMessageRequest {
 
-    public ProxyMessage() {
+    public ProxyMessageRequest() {
     }
 
-    public ProxyMessage(String password, String host, int port) {
+    public ProxyMessageRequest(String password, String host, int port) {
         this.password = password;
         this.host = host;
         this.port = port;
@@ -23,6 +23,4 @@ public class ProxyMessage {
     private String host;
 
     private int port;
-    // private SocksCmdRequest socksCmdRequest;
-
 }

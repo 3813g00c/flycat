@@ -1,6 +1,7 @@
 package com.jper.flycat.server;
 
-import com.jper.flycat.core.codec.ProxyMessageDecoder;
+import com.jper.flycat.core.codec.ProxyMessageRequestDecoder;
+import com.jper.flycat.core.codec.ProxyMessageResponseEncoder;
 import com.jper.flycat.core.factory.ContextSslFactory;
 import com.jper.flycat.server.handler.MySslHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -56,7 +57,8 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                         @Override
                         protected void initChannel(SocketChannel socketChannel) {
                             ChannelPipeline p = socketChannel.pipeline();
-                            p.addLast(new ProxyMessageDecoder(64 * 1024));
+                            p.addLast(new ProxyMessageRequestDecoder(64 * 1024));
+                            p.addLast(new ProxyMessageResponseEncoder());
                             p.addLast(new MySslHandler());
                             SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
                             engine.setUseClientMode(false);
