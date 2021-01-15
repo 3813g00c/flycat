@@ -1,7 +1,7 @@
 package com.jper.flycat.server.handler;
 
-import com.jper.flycat.core.codec.ProxyMessageRequestDecoder;
-import com.jper.flycat.core.codec.ProxyMessageResponseEncoder;
+import com.jper.flycat.server.codec.ProxyMessageRequestDecoder;
+import com.jper.flycat.server.codec.ProxyMessageResponseEncoder;
 import com.jper.flycat.core.handler.DirectClientHandler;
 import com.jper.flycat.core.handler.RelayHandler;
 import com.jper.flycat.core.protocol.ProxyMessageRequest;

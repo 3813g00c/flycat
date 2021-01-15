@@ -1,8 +1,10 @@
 package com.jper.flycat.server;
 
-import com.jper.flycat.core.codec.ProxyMessageRequestDecoder;
-import com.jper.flycat.core.codec.ProxyMessageResponseEncoder;
+import com.jper.flycat.core.util.Sha224Util;
+import com.jper.flycat.server.codec.ProxyMessageRequestDecoder;
+import com.jper.flycat.server.codec.ProxyMessageResponseEncoder;
 import com.jper.flycat.core.factory.ContextSslFactory;
+import com.jper.flycat.server.config.FlyCatConfig;
 import com.jper.flycat.server.handler.MySslHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -12,7 +14,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
@@ -31,19 +33,18 @@ import java.net.InetSocketAddress;
 @Slf4j
 @Component
 public class ServerRunner implements ApplicationRunner, ApplicationListener<ContextClosedEvent>, ApplicationContextAware {
-    @Value("${netty.port}")
-    private int port;
 
-    @Value("${netty.host}")
-    private String host;
+    @Autowired
+    private FlyCatConfig config;
 
     private Channel channel;
-
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
     @Override
     public void run(ApplicationArguments args) {
+        String host = config.getLocalAddr();
+        int port = config.getLocalPort();
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
         try {
@@ -57,7 +58,7 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                         @Override
                         protected void initChannel(SocketChannel socketChannel) {
                             ChannelPipeline p = socketChannel.pipeline();
-                            p.addLast(new ProxyMessageRequestDecoder(64 * 1024));
+                            p.addLast(new ProxyMessageRequestDecoder(64 * 1024, shaPwd));
                             p.addLast(new ProxyMessageResponseEncoder());
                             p.addLast(new MySslHandler());
                             SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
@@ -66,18 +67,18 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                             p.addFirst("ssl", new SslHandler(engine));
                         }
                     });
-            ChannelFuture future = serverBoot.bind(new InetSocketAddress(this.host, this.port)).sync();
+            ChannelFuture future = serverBoot.bind(new InetSocketAddress(host, port)).sync();
             this.channel = future.channel();
             future.addListener((ChannelFutureListener) channelFuture -> {
                 if (channelFuture.isSuccess()) {
-                    log.info("Server bound in {}", this.port);
+                    log.info("Server bound in {}", port);
                 } else {
                     log.info("Bound attempt failed");
                     channelFuture.cause().printStackTrace();
                 }
             });
         } catch (InterruptedException i) {
-            log.error("Server 启动出现异常，端口：{}，cause：{}", this.port, i.getMessage());
+            log.error("Server 启动出现异常，端口：{}，cause：{}", port, i.getMessage());
         }
     }
 
@@ -97,5 +98,14 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
             }
         }
         log.info("服务端服务停止");
+    }
+
+    /**
+     * 获取哈希后的密码
+     *
+     * @return
+     */
+    private String getShaPwd() {
+        return Sha224Util.getSha224Str(config.getPassword());
     }
 }

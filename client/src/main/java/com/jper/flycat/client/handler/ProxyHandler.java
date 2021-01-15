@@ -1,7 +1,7 @@
 package com.jper.flycat.client.handler;
 
-import com.jper.flycat.core.codec.ProxyMessageRequestEncoder;
-import com.jper.flycat.core.codec.ProxyMessageResponseDecoder;
+import com.jper.flycat.client.codec.ProxyMessageRequestEncoder;
+import com.jper.flycat.client.codec.ProxyMessageResponseDecoder;
 import com.jper.flycat.core.protocol.ProxyMessageRequest;
 import com.jper.flycat.core.protocol.ProxyMessageResponse;
 import io.netty.channel.Channel;
