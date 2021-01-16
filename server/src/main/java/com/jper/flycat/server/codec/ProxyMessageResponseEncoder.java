@@ -1,4 +1,4 @@
-package com.jper.flycat.core.codec;
+package com.jper.flycat.server.codec;
 
 import com.jper.flycat.core.protocol.ProxyMessageResponse;
 import io.netty.buffer.ByteBuf;

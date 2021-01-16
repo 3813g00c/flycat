@@ -1,5 +1,6 @@
 package com.jper.flycat.client;
 
+import com.jper.flycat.client.config.FlyCatConfig;
 import com.jper.flycat.client.handler.SocksRequestHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -11,7 +12,6 @@ import io.netty.handler.codec.socks.SocksMessageEncoder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
@@ -20,9 +20,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutorService;
 
 /**
  * 初始化Netty客户端服务
@@ -34,14 +32,8 @@ import java.util.concurrent.ExecutorService;
 @Slf4j
 public class ClientRunner implements ApplicationRunner, ApplicationListener<ContextClosedEvent>, ApplicationContextAware {
 
-    @Value("${netty.port}")
-    private int port;
-
-    @Value("${netty.host}")
-    private String host;
-
-    @Resource(name = "threadPoolInstance")
-    private ExecutorService executorService;
+    @Autowired
+    private FlyCatConfig config;
 
     @Autowired
     private SocksRequestHandler socksRequestHandler;
@@ -56,6 +48,9 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
     @Override
     public void run(ApplicationArguments args) {
         log.info("启动客户端服务");
+        String localAddr = config.getLocalAddr();
+        int localPort = config.getLocalPort();
+
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
         try {
@@ -71,7 +66,7 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
                             p.addLast(socksRequestHandler);
                         }
                     });
-            ChannelFuture future = serverBoot.bind(new InetSocketAddress(this.host, this.port)).sync();
+            ChannelFuture future = serverBoot.bind(new InetSocketAddress(localAddr, localPort)).sync();
             this.channel = future.channel();
             future.addListener((ChannelFutureListener) channelFuture -> {
                 if (channelFuture.isSuccess()) {
@@ -82,7 +77,7 @@ public class ClientRunner implements ApplicationRunner, ApplicationListener<Cont
                 }
             });
         } catch (InterruptedException i) {
-            log.error("ClientServer 启动出现异常，端口：{}，cause：{}", this.port, i.getMessage());
+            log.error("ClientServer 启动出现异常，端口：{}，cause：{}", localPort, i.getMessage());
         }
     }
 

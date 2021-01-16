@@ -4,7 +4,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.socks.*;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,10 +17,8 @@ import org.springframework.stereotype.Component;
 @ChannelHandler.Sharable
 public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksRequest> {
 
-    private final SocksCommandRequestHandler socksCommandRequestHandler = new SocksCommandRequestHandler();
-
-    @Value("${netty.auth}")
-    private volatile boolean auth;
+    @Autowired
+    private SocksCommandRequestHandler socksCommandRequestHandler;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SocksRequest request) {
@@ -28,13 +26,8 @@ public class SocksRequestHandler extends SimpleChannelInboundHandler<SocksReques
         switch (request.requestType()) {
             case INIT: {
                 // 如果是初始化报文
-                if (!auth) {
-                    ctx.pipeline().addFirst(new SocksCmdRequestDecoder());
-                    ctx.writeAndFlush(new SocksInitResponse(SocksAuthScheme.NO_AUTH));
-                } else {
-                    ctx.pipeline().addFirst(new SocksAuthRequestDecoder());
-                    ctx.writeAndFlush(new SocksInitResponse(SocksAuthScheme.AUTH_PASSWORD));
-                }
+                ctx.pipeline().addFirst(new SocksCmdRequestDecoder());
+                ctx.writeAndFlush(new SocksInitResponse(SocksAuthScheme.NO_AUTH));
                 break;
             }
 
