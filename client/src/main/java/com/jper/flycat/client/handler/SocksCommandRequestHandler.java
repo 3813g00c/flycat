@@ -1,8 +1,8 @@
 package com.jper.flycat.client.handler;
 
-import com.jper.flycat.client.config.FlyCatConfig;
 import com.jper.flycat.client.codec.ProxyMessageRequestEncoder;
 import com.jper.flycat.client.codec.ProxyMessageResponseDecoder;
+import com.jper.flycat.client.config.FlyCatConfig;
 import com.jper.flycat.core.factory.ContextSslFactory;
 import com.jper.flycat.core.handler.RelayHandler;
 import com.jper.flycat.core.protocol.ProxyMessageRequest;
@@ -15,15 +15,20 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socks.SocksCmdRequest;
 import io.netty.handler.codec.socks.SocksCmdResponse;
 import io.netty.handler.codec.socks.SocksCmdStatus;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import javax.net.ssl.SSLEngine;
+import java.io.File;
+import java.io.IOException;
 import java.util.NoSuchElementException;
 
 /**
@@ -40,11 +45,16 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
     @Autowired
     private FlyCatConfig config;
 
+    private SslContext sslContext;
+
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final SocksCmdRequest request) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final SocksCmdRequest request) throws IOException {
         String remoteAddr = config.getRemoteAddr();
         int remotePort = config.getRemotePort();
         String password = config.getPassword();
+        ;
+        File ca = new ClassPathResource("ssl/ca.crt").getFile();
+        sslContext = SslContextBuilder.forClient().trustManager(ca).sslProvider(SslProvider.OPENSSL).build();
 
         Promise<Channel> promise = ctx.executor().newPromise();
         promise.addListener(
@@ -69,7 +79,6 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
         final Channel inBoundChannel = ctx.channel();
         ProxyMessageRequest message = new ProxyMessageRequest();
         String shaPwd = Sha224Util.getSha224Str(password);
-        System.out.println(shaPwd);
         message.setPassword(shaPwd);
         message.setHost(request.host());
         message.setPort(request.port());
@@ -87,7 +96,7 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
                         p.addLast(new ProxyMessageRequestEncoder());
                         p.addLast(new ProxyMessageResponseDecoder(64 * 1024));
                         p.addLast(new ProxyHandler(message, inBoundChannel, promise));
-                        p.addFirst("ssl", new SslHandler(engine));
+                        p.addFirst(sslContext.newHandler(ch.alloc()));
                     }
                 });
 
