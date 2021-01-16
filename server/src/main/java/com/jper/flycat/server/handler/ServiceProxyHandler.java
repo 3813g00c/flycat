@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
  * @date 2020/12/30 下午8:55
  */
 @Slf4j
-public class MySslHandler extends ChannelInboundHandlerAdapter {
+public class ServiceProxyHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProxyMessageRequest message = (ProxyMessageRequest) msg;
@@ -48,13 +48,15 @@ public class MySslHandler extends ChannelInboundHandlerAdapter {
                 .handler(new DirectClientHandler(promise));
         b.connect(message.getHost(), message.getPort()).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
+                // 很重要，将当前Channel设置为自动读取模式
+                ctx.channel().config().setAutoRead(true);
                 log.info("connect establish success, from {}:{}", message.getHost(), message.getPort());
                 ProxyMessageResponse response = new ProxyMessageResponse(1, "success");
                 ctx.writeAndFlush(response).addListener(future1 -> {
                     try {
                         ctx.channel().pipeline().remove(ProxyMessageRequestDecoder.class);
                         ctx.channel().pipeline().remove(ProxyMessageResponseEncoder.class);
-                        ctx.channel().pipeline().remove(MySslHandler.class);
+                        ctx.channel().pipeline().remove(ServiceProxyHandler.class);
                     } catch (NoSuchElementException e) {
                         log.info("remove handlers");
                     }
@@ -67,7 +69,6 @@ public class MySslHandler extends ChannelInboundHandlerAdapter {
                 SocksServerUtils.closeOnFlush(ctx.channel());
             }
         });
-        ctx.channel().pipeline().remove(this);
         ReferenceCountUtil.release(msg);
     }
 
