@@ -31,8 +31,8 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 
 /**
@@ -58,15 +58,18 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
     @Override
     public void run(ApplicationArguments args) {
         try {
-            File crt = (new ClassPathResource("ssl/server.crt")).getFile();
-            File key = (new ClassPathResource("ssl/pkcs8_server.key")).getFile();
-            File ca = new ClassPathResource("ssl/ca.crt").getFile();
+            InputStream crt = new ClassPathResource("ssl/server1.crt").getInputStream();
+            InputStream key = new ClassPathResource("ssl/pkcs8_server1.key").getInputStream();
             sslContext = SslContextBuilder.forServer(crt, key)
+                    .trustManager()
                     .clientAuth(ClientAuth.NONE)
                     .sslProvider(SslProvider.OPENSSL)
+                    .protocols("TLSv1.3", "TLSv1.2")
                     .build();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
             log.error("Failed to initialize SSL engine.");
+            e.printStackTrace();
+            log.error(e.getMessage());
             return;
         }
 

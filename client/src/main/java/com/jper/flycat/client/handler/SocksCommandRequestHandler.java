@@ -52,9 +52,12 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
         String remoteAddr = config.getRemoteAddr();
         int remotePort = config.getRemotePort();
         String password = config.getPassword();
-        ;
-        File ca = new ClassPathResource("ssl/ca.crt").getFile();
-        sslContext = SslContextBuilder.forClient().trustManager(ca).sslProvider(SslProvider.OPENSSL).build();
+        File ca = new ClassPathResource("ssl/server1.crt").getFile();
+        sslContext = SslContextBuilder.forClient()
+                .trustManager(ca)
+                .sslProvider(SslProvider.OPENSSL)
+                .protocols("TLSv1.3", "TLSv1.2")
+                .build();
 
         Promise<Channel> promise = ctx.executor().newPromise();
         promise.addListener(

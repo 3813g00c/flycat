@@ -89,6 +89,34 @@ public class ContextSslFactory {
         return kms;
     }
 
+    public static TrustManagerFactory getTest() {
+        FileInputStream is = null;
+        KeyStore ks = null;
+        TrustManagerFactory keyFac = null;
+
+        TrustManager[] kms = null;
+        try {
+            // 获得KeyManagerFactory对象. 初始化位默认算法
+            keyFac = TrustManagerFactory.getInstance("SunX509");
+            is = new FileInputStream((new ClassPathResource("ssl/cChat.jks")).getFile());
+            ks = KeyStore.getInstance("JKS");
+            String keyStorePass = "sNetty";
+            ks.load(is, keyStorePass.toCharArray());
+            keyFac.init(ks);
+            kms = keyFac.getTrustManagers();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return keyFac;
+    }
     private static TrustManager[] getTrustManagersClient() {
         FileInputStream is = null;
         KeyStore ks = null;
