@@ -19,26 +19,33 @@ public class ProxyMessageRequestDecoder extends LineBasedFrameDecoder {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        // 请求从Channel读取一个消息
         ctx.channel().read();
     }
 
+    /**
+     * 解码第一个消息，有可能是稀有稀有消息，也有可能是正常的Https请求
+     * 如果密码验证通过，构造Proxy请求对象发送给下一个处理器
+     * 如果是Http请求，发送拷贝的原Buffer
+     *
+     * @param ctx    ctx
+     * @param buffer buffer
+     * @return ByteBuf
+     * @throws Exception Exception
+     */
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
-        ByteBuf frame = (ByteBuf) super.decode(ctx, buffer);
-        if (frame == null) {
-            return null;
-        }
         try {
-            int index = frame.indexOf(frame.readerIndex(), frame.writerIndex(), (byte) ' ');
+            int index = buffer.indexOf(buffer.readerIndex(), buffer.writerIndex(), (byte) ' ');
             byte[] bytesPwd = new byte[index];
-            frame.getBytes(0, bytesPwd);
+            buffer.getBytes(0, bytesPwd);
             String pwd = new String(bytesPwd);
-
             if (pwd.equals(shaPwd)) {
+                ByteBuf frame = (ByteBuf) super.decode(ctx, buffer);
                 int index2 = frame.indexOf(index + 1, frame.writerIndex(), (byte) ' ');
                 byte[] bytesHost = new byte[index2 - index - 1];
-                frame.getBytes(index + 1, bytesHost);
-                int p = frame.getInt(index2 + 1);
+                buffer.getBytes(index + 1, bytesHost);
+                int p = buffer.getInt(index2 + 1);
                 ProxyMessageRequest message = new ProxyMessageRequest();
                 message.setPassword(pwd);
                 message.setHost(new String(bytesHost));
@@ -49,6 +56,7 @@ public class ProxyMessageRequestDecoder extends LineBasedFrameDecoder {
                 return buffer;
             }
         } catch (Exception e) {
+            ctx.channel().pipeline().remove(this);
             return buffer;
         }
     }

@@ -9,6 +9,7 @@ import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpRequestEncoder;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -47,7 +48,10 @@ public class WrongPasswordHandler extends ChannelInboundHandlerAdapter {
         outBoundChannel = future1.channel();
         future1.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                outBoundChannel.writeAndFlush(firstMsg).addListener((ChannelFutureListener) future2 -> inBoundChannel.read());
+                ReferenceCountUtil.refCnt(firstMsg);
+                outBoundChannel.writeAndFlush(firstMsg).addListener((ChannelFutureListener) future2 -> {
+                    inBoundChannel.read();
+                });
                 log.warn("Received other HTTPS request message, proxy to local springboot service port.");
             } else {
                 SocksServerUtils.closeOnFlush(inBoundChannel);
@@ -62,6 +66,7 @@ public class WrongPasswordHandler extends ChannelInboundHandlerAdapter {
         if (outBoundChannel.isActive()) {
             outBoundChannel.writeAndFlush(msg).addListener(future -> {
                 if (future.isSuccess()) {
+                    // ReferenceCountUtil.release(msg);
                     ctx.channel().read();
                 } else {
                     outBoundChannel.close();

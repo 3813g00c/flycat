@@ -1,6 +1,5 @@
 package com.jper.flycat.server;
 
-import com.jper.flycat.core.factory.ContextSslFactory;
 import com.jper.flycat.core.util.Sha224Util;
 import com.jper.flycat.server.codec.ProxyMessageRequestDecoder;
 import com.jper.flycat.server.codec.ProxyMessageResponseEncoder;
@@ -16,7 +15,10 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +28,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import javax.net.ssl.SSLEngine;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 
 /**
@@ -44,6 +48,7 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
     private Channel channel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
+    private SslContext sslContext;
 
     /**
      * 启动Netty客户端时，为了安全，会先连接本地的SpringBoot端口，如果连接失败，将会拒绝启动代理服务器
@@ -52,12 +57,24 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
      */
     @Override
     public void run(ApplicationArguments args) {
-
-        System.setProperty("https.protocols", "TLSv1.2,TLSv1.1,SSLv3");
+        try {
+            InputStream crt = new ClassPathResource("ssl/server1.crt").getInputStream();
+            InputStream key = new ClassPathResource("ssl/pkcs8_server1.key").getInputStream();
+            sslContext = SslContextBuilder.forServer(crt, key)
+                    .trustManager()
+                    .clientAuth(ClientAuth.NONE)
+                    .sslProvider(SslProvider.OPENSSL)
+                    .protocols("TLSv1.3", "TLSv1.2")
+                    .build();
+        } catch (IOException e) {
+            log.error("Failed to initialize SSL engine.");
+            e.printStackTrace();
+            log.error(e.getMessage());
+            return;
+        }
 
         String host = config.getLocalAddr();
         int port = config.getLocalPort();
-
         String remoteAddr = config.getRemoteAddr();
         int remotePort = config.getRemotePort();
 
@@ -91,11 +108,13 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
                                 p.addLast(new ProxyMessageRequestDecoder(64 * 1024, getShaPwd()));
                                 p.addLast(new ProxyMessageResponseEncoder());
                                 p.addLast(new DistributeHandler());
-                                SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
-                                engine.setUseClientMode(false);
-                                engine.setNeedClientAuth(false);
-                                p.addFirst("ssl", new SslHandler(engine));
+                                //SSLEngine engine = ContextSslFactory.getSslContext1().createSSLEngine();
+//                                engine.setUseClientMode(false);
+//                                engine.setNeedClientAuth(false);
+                                // p.addFirst("ssl", new SslHandler(engine));
+                                p.addFirst(sslContext.newHandler(socketChannel.alloc()));
                             }
+
                         })
                         .childOption(ChannelOption.AUTO_READ, false);
                 ChannelFuture f = serverBoot.bind(new InetSocketAddress(host, port)).sync();

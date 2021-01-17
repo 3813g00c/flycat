@@ -1,6 +1,7 @@
 server:
   port: 8081
 
+
 netty:
   run-type: server
   local-addr: 0.0.0.0

@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 public class HomeController {
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String index() {
+        return "login";
+    }
+
+    @RequestMapping(value = "/404", method = RequestMethod.GET)
+    public String notFound() {
         return "404";
     }
 }
