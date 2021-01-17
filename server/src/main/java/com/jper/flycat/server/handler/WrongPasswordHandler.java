@@ -48,12 +48,9 @@ public class WrongPasswordHandler extends ChannelInboundHandlerAdapter {
         outBoundChannel = future1.channel();
         future1.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                outBoundChannel.writeAndFlush(firstMsg).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        ReferenceCountUtil.release(firstMsg);
-                        inBoundChannel.read();
-                    }
+                ReferenceCountUtil.refCnt(firstMsg);
+                outBoundChannel.writeAndFlush(firstMsg).addListener((ChannelFutureListener) future2 -> {
+                    inBoundChannel.read();
                 });
                 log.warn("Received other HTTPS request message, proxy to local springboot service port.");
             } else {
@@ -69,7 +66,7 @@ public class WrongPasswordHandler extends ChannelInboundHandlerAdapter {
         if (outBoundChannel.isActive()) {
             outBoundChannel.writeAndFlush(msg).addListener(future -> {
                 if (future.isSuccess()) {
-                    ReferenceCountUtil.release(msg);
+                    // ReferenceCountUtil.release(msg);
                     ctx.channel().read();
                 } else {
                     outBoundChannel.close();

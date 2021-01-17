@@ -57,8 +57,6 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
      */
     @Override
     public void run(ApplicationArguments args) {
-
-        System.setProperty("https.protocols", "TLSv1.2,TLSv1.1,SSLv3");
         try {
             File crt = (new ClassPathResource("ssl/server.crt")).getFile();
             File key = (new ClassPathResource("ssl/pkcs8_server.key")).getFile();
