@@ -61,7 +61,6 @@ public class ServerRunner implements ApplicationRunner, ApplicationListener<Cont
             InputStream crt = new ClassPathResource("ssl/server1.crt").getInputStream();
             InputStream key = new ClassPathResource("ssl/pkcs8_server1.key").getInputStream();
             sslContext = SslContextBuilder.forServer(crt, key)
-                    .trustManager()
                     .clientAuth(ClientAuth.NONE)
                     .sslProvider(SslProvider.OPENSSL)
                     .protocols("TLSv1.3", "TLSv1.2")
