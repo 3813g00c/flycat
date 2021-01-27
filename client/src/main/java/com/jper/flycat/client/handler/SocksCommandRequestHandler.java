@@ -3,7 +3,6 @@ package com.jper.flycat.client.handler;
 import com.jper.flycat.client.codec.ProxyMessageRequestEncoder;
 import com.jper.flycat.client.codec.ProxyMessageResponseDecoder;
 import com.jper.flycat.client.config.FlyCatConfig;
-import com.jper.flycat.core.factory.ContextSslFactory;
 import com.jper.flycat.core.handler.RelayHandler;
 import com.jper.flycat.core.protocol.ProxyMessageRequest;
 import com.jper.flycat.core.util.Sha224Util;
@@ -26,9 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import javax.net.ssl.SSLEngine;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.NoSuchElementException;
 
 /**
@@ -52,9 +50,9 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
         String remoteAddr = config.getRemoteAddr();
         int remotePort = config.getRemotePort();
         String password = config.getPassword();
-        File ca = new ClassPathResource("ssl/server1.crt").getFile();
+        InputStream crt = new ClassPathResource("ssl/server1.crt").getInputStream();
         sslContext = SslContextBuilder.forClient()
-                .trustManager(ca)
+                .trustManager(crt)
                 .sslProvider(SslProvider.OPENSSL)
                 .protocols("TLSv1.3", "TLSv1.2")
                 .build();
@@ -94,8 +92,6 @@ public final class SocksCommandRequestHandler extends SimpleChannelInboundHandle
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
-                        SSLEngine engine = ContextSslFactory.getSslContext2().createSSLEngine();
-                        engine.setUseClientMode(true);
                         p.addLast(new ProxyMessageRequestEncoder());
                         p.addLast(new ProxyMessageResponseDecoder(64 * 1024));
                         p.addLast(new ProxyHandler(message, inBoundChannel, promise));
